@@ -1,0 +1,130 @@
+
+name: 'Deploy-billing-notification-handler'
+
+on:
+  workflow_dispatch
+
+
+env:
+
+jobs:
+  deploy-tf-resources:
+    name: Set up Billing Alerts, PubSub and Cloud Run using Terraform
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    
+    defaults:
+      run:
+        shell: bash
+        working-directory: infrastructure
+
+    steps:
+    
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v3
+    
+  #   # Authenticating to GCP
+    - name: 'Authenticate to Google Cloud'
+      id: auth
+      uses: 'google-github-actions/auth@v1'
+      with:
+        token_format: 'access_token'
+        workload_identity_provider: "projects/${{ env.PROJECT_NUM }}/locations/global/workloadIdentityPools/${{ env.WORKLOAD_IDENTITY_POOL }}/providers/${{ env.WL_PROVIDER }}"
+        service_account: ${{ env.SERVICE_ACCOUNT }}
+    
+    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+
+    # Checks which files that should be rewritten to Terraform canonical style and format for configuration files - If triggered run terraform fmt locally and commit affected files
+    - name: Terraform Format
+      run: terraform fmt -check
+
+    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    - name: Terraform Init
+      run: terraform init --upgrade=true
+
+    # Validates the syntax of the Terraform configuration files
+    - name: Terraform Validate
+      run: terraform validate
+
+    # Generates an execution plan for Terraform
+    - name: Terraform Plan
+      run: terraform plan -input=false
+
+    # Applies execution plan for Terraform
+    - name: Terraform Apply  
+      if: github.ref == 'refs/heads/main'
+      run: terraform apply -auto-approve
+
+
+  docker-build-push:
+    name: Build and push docker image to Artifact Registry and deploy image to Cloud Run service
+    needs: deploy-tf-resources
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    outputs:
+      argo-deployment-check: $ {{ steps.argo-check.outputs.ARGO-DEPLOYMENT-STATUS }}
+
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    
+    defaults:
+      run:
+        shell: bash
+        working-directory: app
+
+    steps:
+    
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v3
+    
+    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+    
+    # Authenticating to GCP
+    - name: 'Authenticate to Google Cloud'
+      id: auth
+      uses: 'google-github-actions/auth@v1'
+      with:
+        token_format: 'access_token'
+        workload_identity_provider: "projects/${{ env.PROJECT_NUM }}/locations/global/workloadIdentityPools/${{ env.WORKLOAD_IDENTITY_POOL }}/providers/${{ env.WL_PROVIDER }}"
+        service_account: ${{ env.SERVICE_ACCOUNT }}
+
+    # Install the latest version of GCLOUD CLI with Cloud SDK
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v1'
+
+    # Configure the gke-gcloud-auth-plugin, which is required for gke authentication following https://cloud.google.com/blog/products/containers-kubernetes/kubectl-auth-changes-in-gke        
+    - name: Update gcloud components
+      run: |
+            gcloud components update
+    
+    # Adding public IP as temporary authorized network
+    - name: Docker build
+      run: | 
+          docker build . --tag ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_ID }}/${{ env.CLOUD_RUN_SERVICE }}:${{ env.APP-VERSION }}
+
+
+
+    # Adding public IP as temporary authorized network
+    - name: Docker push
+      run: | 
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_ID }}/${{ env.CLOUD_RUN_SERVICE }}:${{ env.APP-VERSION }}
+
+    # Adding public IP as temporary authorized network
+    - name: Deploy image to Cloud Run
+      run: | 
+          gcloud run deploy ${{ env.CLOUD_RUN_SERVICE }} \
+              --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_ID }}/${{ env.CLOUD_RUN_SERVICE }}:${{ env.APP-VERSION }} \
+              --project ${{ env.PROJECT_ID }} \
+              --region ${{ env.REGION }} \
+              --set-env-vars SLACK_TOKEN=${{ env.SLACK_TOKEN }},CHANNEL_ID=${{ env.CHANNEL_ID }}
