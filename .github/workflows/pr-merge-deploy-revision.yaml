@@ -33,7 +33,6 @@ jobs:
       id: auth
       uses: 'google-github-actions/auth@v1'
       with:
-        token_format: 'access_token'
         workload_identity_provider: "projects/${{ env.PROJECT_NUM }}/locations/global/workloadIdentityPools/${{ secrets.WORKLOAD_IDENTITY_POOL }}/providers/${{ secrets.WL_PROVIDER }}"
         service_account: ${{ secrets.SERVICE_ACCOUNT }}
     
