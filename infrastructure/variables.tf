@@ -29,11 +29,3 @@ variable "terraform_sa" {
 variable "artifact_registry" {
   description = "Repository for pushing docker images"
 }
-
-variable "tf_organization" {
-  description = "Storage Bucket for storing Terraform state file"
-}
-
-variable "tf_workspace" {
-  description = "Prefix path in Storage bucket"
-}

@@ -67,6 +67,7 @@ jobs:
   docker-build-push:
     name: Build and push docker image to Artifact Registry and deploy image to Cloud Run service
     needs: deploy-tf-resources
+    environment: prod
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
