@@ -10,6 +10,7 @@ env:
 jobs:
   deploy-tf-resources:
     name: Set up Billing Alerts, PubSub and Cloud Run using Terraform
+    environment: prod
     runs-on: ubuntu-latest
 
     permissions:
