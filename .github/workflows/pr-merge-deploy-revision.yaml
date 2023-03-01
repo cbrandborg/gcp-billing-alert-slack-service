@@ -39,6 +39,8 @@ jobs:
     # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
+      with:
+        cli_config_credentials_token: ${{ secrets.TF_CLOUD_OWNER_TEAM_TOKEN }}
 
     # Checks which files that should be rewritten to Terraform canonical style and format for configuration files - If triggered run terraform fmt locally and commit affected files
     - name: Terraform Format
@@ -86,18 +88,11 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
     
-    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v2
-      with:
-        cli_config_credentials_token: ${{ secrets.TF_CLOUD_OWNER_TEAM_TOKEN }}
-    
     # Authenticating to GCP
     - name: 'Authenticate to Google Cloud'
       id: auth
       uses: 'google-github-actions/auth@v1'
       with:
-        token_format: 'access_token'
         workload_identity_provider: "projects/${{ env.PROJECT_NUM }}/locations/global/workloadIdentityPools/${{ secrets.WORKLOAD_IDENTITY_POOL }}/providers/${{ secrets.WL_PROVIDER }}"
         service_account: ${{ secrets.SERVICE_ACCOUNT }}
 
