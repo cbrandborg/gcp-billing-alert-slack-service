@@ -33,11 +33,12 @@ jobs:
       id: auth
       uses: 'google-github-actions/auth@v1'
       with:
-        workload_identity_provider: "projects/${{ env.PROJECT_NUM }}/locations/global/workloadIdentityPools/${{ secrets.WORKLOAD_IDENTITY_POOL }}/providers/${{ secrets.WL_PROVIDER_GH }}"
-        service_account: ${{ secrets.SERVICE_ACCOUNT }}
-    
+        # workload_identity_provider: "projects/${{ env.PROJECT_NUM }}/locations/global/workloadIdentityPools/${{ secrets.WORKLOAD_IDENTITY_POOL }}/providers/${{ secrets.WL_PROVIDER_GH }}"
+        # service_account: ${{ secrets.SERVICE_ACCOUNT }}
+        workload_identity_provider: "projects/282098649896/locations/global/workloadIdentityPools/wli-billing-alert-service/providers/billing-alert-service-gh-prvdr"
+        service_account: sa-dk-billing-alert-gh-runner@prj-dtdk-client-billing.iam.gserviceaccount.com
     - name: Test
-      run: gcloud projects list
+      run: gcloud iam service-accounts get-iam-policy sa-dk-billing-alert-gh-runner@prj-dtdk-client-billing.iam.gserviceaccount.com --project prj-dtdk-client-billing
 
     # # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
     # - name: Setup Terraform
