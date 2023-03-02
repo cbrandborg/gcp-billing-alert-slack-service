@@ -36,32 +36,35 @@ jobs:
         workload_identity_provider: "projects/${{ env.PROJECT_NUM }}/locations/global/workloadIdentityPools/${{ secrets.WORKLOAD_IDENTITY_POOL }}/providers/${{ secrets.WL_PROVIDER_GH }}"
         service_account: ${{ secrets.SERVICE_ACCOUNT }}
     
-    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v2
-      with:
-        cli_config_credentials_token: ${{ secrets.TF_CLOUD_OWNER_TEAM_TOKEN }}
+    - name: Test
+      run: gcloud projects list
 
-    # Checks which files that should be rewritten to Terraform canonical style and format for configuration files - If triggered run terraform fmt locally and commit affected files
-    - name: Terraform Format
-      run: terraform fmt -check
+    # # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    # - name: Setup Terraform
+    #   uses: hashicorp/setup-terraform@v2
+    #   with:
+    #     cli_config_credentials_token: ${{ secrets.TF_CLOUD_OWNER_TEAM_TOKEN }}
 
-    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
-    - name: Terraform Init
-      run: terraform init --upgrade=true
+    # # Checks which files that should be rewritten to Terraform canonical style and format for configuration files - If triggered run terraform fmt locally and commit affected files
+    # - name: Terraform Format
+    #   run: terraform fmt -check
 
-    # Validates the syntax of the Terraform configuration files
-    - name: Terraform Validate
-      run: terraform validate
+    # # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    # - name: Terraform Init
+    #   run: terraform init --upgrade=true
 
-    # Generates an execution plan for Terraform
-    - name: Terraform Plan
-      run: terraform plan -input=false -no-color
+    # # Validates the syntax of the Terraform configuration files
+    # - name: Terraform Validate
+    #   run: terraform validate
 
-    # Applies execution plan for Terraform
-    - name: Terraform Apply  
-      if: github.ref == 'refs/heads/main'
-      run: terraform apply -auto-approve
+    # # Generates an execution plan for Terraform
+    # - name: Terraform Plan
+    #   run: terraform plan -input=false -no-color
+
+    # # Applies execution plan for Terraform
+    # - name: Terraform Apply  
+    #   if: github.ref == 'refs/heads/main'
+    #   run: terraform apply -auto-approve
 
 
   docker-build-push:
